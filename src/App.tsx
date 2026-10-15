@@ -12,12 +12,12 @@ import { Forgot, Reset, Verify } from './pages/Recover'
 import Profile from './pages/Profile'
 import Organizations from './pages/Organizations'
 
-function Guard({ children, needOrg }: { children: ReactNode; needOrg?: boolean }) {
+function Guard({ children, needOrg, allowOrg }: { children: ReactNode; needOrg?: boolean; allowOrg?: boolean }) {
   const { db } = useApp()
   const [sp] = useSearchParams()
   if (!db.signedIn) return <Navigate to="/signin" replace />
   if (needOrg && !db.org) return <Navigate to="/onboarding" replace />
-  if (!needOrg && db.org && !sp.get('new')) return <Navigate to="/app" replace />
+  if (!needOrg && !allowOrg && db.org && !sp.get('new')) return <Navigate to="/app" replace />
   return <>{children}</>
 }
 
@@ -31,7 +31,7 @@ export default function App() {
       <Route path="/reset/:token" element={<Reset />} />
       <Route path="/verify/:token" element={<Verify />} />
       <Route path="/admin" element={<Admin />} />
-      <Route path="/profile" element={<Guard><Profile /></Guard>} />
+      <Route path="/profile" element={<Guard allowOrg><Profile /></Guard>} />
       <Route path="/organizations" element={<Organizations />} />
       <Route path="/join/:token" element={<Join />} />
       <Route path="/invite/:token" element={<Invite />} />
