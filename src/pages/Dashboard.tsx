@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowCounterClockwise, CaretDown, Clock, DotsThree, FileDoc, FileImage, FilePdf, FilePpt, FileText, FileVideo, FileXls,
+  ArrowCounterClockwise, CaretDown, Clock, DotsThree, EnvelopeSimple, FileDoc, FileImage, FilePdf, FilePpt, FileText, FileVideo, FileXls,
   Files, FolderPlus, FolderSimple, List, MagnifyingGlass, Plus, SignOut, Star, Trash, UploadSimple, X, DownloadSimple, UsersThree, GearSix, ShieldCheck, Eye, CaretUpDown, Check, PaperPlaneTilt, CheckCircle, ArrowUUpLeft, Pulse, type Icon,
 } from '@phosphor-icons/react'
 import { api, type Doc, type Status } from '../lib/api'
@@ -105,6 +105,9 @@ export default function Dashboard() {
     try { setDb(await api.purge(ids)); setSel([]); say('Deleted forever') } catch (e) { say((e as Error).message) }
   }
   async function signOut() { setDb(await api.signOut()); nav('/') }
+  async function sendVerification() {
+    try { await api.resendVerification(); say('Verification email sent') } catch (e) { say((e as Error).message) }
+  }
 
   const hour = new Date().getHours()
   const greeting = `${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}, ${user.name.split(' ')[0]}`
@@ -161,6 +164,7 @@ export default function Dashboard() {
             </>}>
             {(close) => <>
               {user.isAdmin && <MenuItem icon={<ShieldCheck size={18} />} onClick={() => { close(); nav('/admin') }}>Admin dashboard</MenuItem>}
+              {!user.emailVerified && <MenuItem icon={<EnvelopeSimple size={18} />} onClick={() => { close(); void sendVerification() }}>Verify email</MenuItem>}
               <MenuItem icon={<SignOut size={18} />} onClick={signOut}>Sign out</MenuItem>
             </>}
           </Menu>

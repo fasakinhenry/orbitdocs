@@ -4,7 +4,7 @@ import { ImageSquare } from '@phosphor-icons/react'
 import { api } from '../lib/api'
 import { useApp } from '../lib/store'
 import { slugify } from '../lib/util'
-import { AuthShell, Logo, ghost, input, primary } from '../components/ui'
+import { Logo, input, primary } from '../components/ui'
 
 const TYPES = ['Student community', 'Nonprofit', 'Startup', 'Company', 'Educational institution', 'Professional community', 'Other']
 
@@ -81,33 +81,8 @@ function OnboardingForm() {
   )
 }
 
-function VerifyGate() {
-  const { db, setDb, say } = useApp()
-  const [busy, setBusy] = useState(false)
-  async function resend() {
-    setBusy(true)
-    try { await api.resendVerification(); say('Verification email sent') } catch (e) { say((e as Error).message) } finally { setBusy(false) }
-  }
-  async function check() {
-    try {
-      const d = await api.session()
-      setDb(d)
-      if (!d.user?.emailVerified) say('Not verified yet. Open the link in your email first.')
-    } catch (e) { say((e as Error).message) }
-  }
-  return (
-    <AuthShell title="Verify your email" sub={`We sent a link to ${db.user!.email}. Open it, then come back here.`}>
-      <div className="mt-8 space-y-3">
-        <button className={`${primary} h-11 w-full`} onClick={check}>I have verified</button>
-        <button className={`${ghost} h-11 w-full`} disabled={busy} onClick={resend}>{busy ? 'Sending' : 'Send the email again'}</button>
-      </div>
-    </AuthShell>
-  )
-}
-
 export default function Onboarding() {
-  const { db } = useApp()
-  return db.user?.emailVerified ? <OnboardingForm /> : <VerifyGate />
+  return <OnboardingForm />
 }
 
 function PendingInvites() {
