@@ -9,6 +9,8 @@ import Invite from './pages/Invite'
 import Join from './pages/Join'
 import Admin from './pages/Admin'
 import { Forgot, Reset, Verify } from './pages/Recover'
+import Profile from './pages/Profile'
+import Organizations from './pages/Organizations'
 
 function Guard({ children, needOrg }: { children: ReactNode; needOrg?: boolean }) {
   const { db } = useApp()
@@ -29,6 +31,8 @@ export default function App() {
       <Route path="/reset/:token" element={<Reset />} />
       <Route path="/verify/:token" element={<Verify />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/profile" element={<Guard><Profile /></Guard>} />
+      <Route path="/organizations" element={<Organizations />} />
       <Route path="/join/:token" element={<Join />} />
       <Route path="/invite/:token" element={<Invite />} />
       <Route path="/onboarding" element={<Guard><Onboarding /></Guard>} />

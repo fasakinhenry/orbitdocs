@@ -164,6 +164,7 @@ export default function Dashboard() {
             </>}>
             {(close) => <>
               {user.isAdmin && <MenuItem icon={<ShieldCheck size={18} />} onClick={() => { close(); nav('/admin') }}>Admin dashboard</MenuItem>}
+              <MenuItem icon={<GearSix size={18} />} onClick={() => { close(); nav('/profile') }}>Profile settings</MenuItem>
               {!user.emailVerified && <MenuItem icon={<EnvelopeSimple size={18} />} onClick={() => { close(); void sendVerification() }}>Verify email</MenuItem>}
               <MenuItem icon={<SignOut size={18} />} onClick={signOut}>Sign out</MenuItem>
             </>}

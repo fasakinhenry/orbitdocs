@@ -42,6 +42,7 @@ export default function Landing() {
         <Link to="/" className="flex items-center gap-2.5 font-semibold"><Logo />OrbitDocs</Link>
         <nav className="flex items-center gap-2">
           <Link to="/signin" className={ghost}>Sign in</Link>
+          <Link to="/organizations" className="hidden text-sm text-slate-500 hover:text-slate-900 sm:inline-flex">Explore organizations</Link>
           <Link to="/signup" className={`${primary} hidden sm:inline-flex`}>Get started</Link>
         </nav>
       </header>

@@ -27,18 +27,8 @@ export default function Auth({ mode }: { mode: 'signin' | 'signup' }) {
     setBusy(true); setErr('')
     try {
       let d = up ? await api.signUp(name, username, email, pw) : await api.signIn(email, pw)
-      const inv = sessionStorage.getItem('orbitdocs.invite')
-      if (inv) {
-        sessionStorage.removeItem('orbitdocs.invite'); sessionStorage.removeItem('orbitdocs.inviteEmail')
-        try { d = await api.acceptInvite(inv) } catch (x) { say((x as Error).message) }
-      }
-      const jn = sessionStorage.getItem('orbitdocs.join')
-      if (jn) {
-        sessionStorage.removeItem('orbitdocs.join')
-        try { d = await api.join(jn) } catch (x) { say((x as Error).message) }
-      }
       setDb(d)
-      nav(d.org ? '/app' : '/onboarding')
+      nav(up ? '/onboarding?new=1' : d.org ? '/app' : '/onboarding')
     } catch (x) {
       setErr((x as Error).message)
     } finally { setBusy(false) }

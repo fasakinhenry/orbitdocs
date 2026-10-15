@@ -9,16 +9,22 @@ export default function Settings() {
   const org = db.org!
   const [name, setName] = useState(org.name)
   const [desc, setDesc] = useState(org.description ?? '')
+  const [visibility, setVisibility] = useState<'public' | 'private'>(org.visibility ?? 'public')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [usage, setUsage] = useState<Usage>()
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([])
+  const [folderId, setFolderId] = useState('')
+  const [memberId, setMemberId] = useState('')
+  const [permissions, setPermissions] = useState({ view: true, upload: false, edit: false, delete: false })
   useEffect(() => { api.usage().then(setUsage).catch(() => undefined) }, [])
+  useEffect(() => { if (org.role !== 'member') api.members().then((x) => setMembers(x.members.map((m) => ({ id: m.id, name: m.name })))).catch(() => undefined) }, [org.role])
 
   async function save(e: FormEvent) {
     e.preventDefault()
     if (name.trim().length < 2) return setErr('Enter an organization name.')
     setBusy(true); setErr('')
-    try { setDb(await api.updateOrg(name.trim(), desc.trim())); say('Settings saved') } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
+    try { setDb(await api.updateOrg(name.trim(), desc.trim(), visibility)); say('Settings saved') } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
   }
   async function logo(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -48,6 +54,12 @@ export default function Settings() {
       <form onSubmit={save} className="mt-8 max-w-xl space-y-5" noValidate>
         <label className="block text-sm font-medium">Organization name<input value={name} onChange={(e) => setName(e.target.value)} className={`${input} mt-1.5`} /></label>
         <label className="block text-sm font-medium">Description<textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} className={`${input} mt-1.5 h-auto py-2.5`} /></label>
+        <label className="block text-sm font-medium">Organization visibility
+          <select value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')} className={`${input} mt-1.5`}>
+            <option value="public">Public - discoverable and open to join requests</option>
+            <option value="private">Private - invite or join link only</option>
+          </select>
+        </label>
         <dl className="grid grid-cols-2 gap-4 text-sm">
           <div><dt className="text-slate-400">Type</dt><dd className="mt-1">{org.type}</dd></div>
           <div><dt className="text-slate-400">URL name</dt><dd className="mt-1">{org.slug}</dd></div>
@@ -55,6 +67,26 @@ export default function Settings() {
         {err && <p role="alert" className="text-sm text-red-600">{err}</p>}
         <button disabled={busy} className={primary}>{busy ? 'Saving' : 'Save changes'}</button>
       </form>
+      {org.role !== 'member' && (
+        <section className="mt-12 max-w-xl">
+          <h2 className="text-base font-semibold">Folder access</h2>
+          <p className="mt-1 text-sm text-slate-500">Set access limits for individual members.</p>
+          <div className="mt-4 space-y-3">
+            <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={input}>
+              <option value="">Select a folder</option>
+              {db.folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+            <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className={input}>
+              <option value="">Select a member</option>
+              {members.filter((m) => m.id !== db.user?.id).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {(['view', 'upload', 'edit', 'delete'] as const).map((key) => <label key={key} className="flex items-center gap-2"><input type="checkbox" checked={permissions[key]} onChange={(e) => setPermissions({ ...permissions, [key]: e.target.checked })} />{key}</label>)}
+            </div>
+            <button type="button" className={primary} disabled={!folderId || !memberId} onClick={() => api.setFolderAccess(folderId, { userId: memberId, ...permissions }).then(() => say('Folder access updated')).catch((e: Error) => say(e.message))}>Save folder access</button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

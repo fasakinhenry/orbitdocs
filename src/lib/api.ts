@@ -2,8 +2,8 @@
 // The UI works with one snapshot (DB) of the active organization, which is refetched after every change.
 export type Status = 'approved' | 'pending' | 'draft'
 export type Role = 'owner' | 'admin' | 'member'
-export interface User { id: string; name: string; username: string; email: string; emailVerified: boolean; isAdmin: boolean }
-export interface Org { id: string; name: string; slug: string; type: string; description?: string; role: Role; logoUrl: string | null }
+export interface User { id: string; name: string; username: string; email: string; emailVerified: boolean; isAdmin: boolean; avatarUrl?: string | null; bio?: string; socialLinks?: Record<string, string>; profilePublic?: boolean }
+export interface Org { id: string; name: string; slug: string; type: string; description?: string; role: Role; logoUrl: string | null; visibility?: 'public' | 'private'; personal?: boolean }
 export interface Note { id: string; text: string; at: string; read: boolean }
 export interface Folder { id: string; name: string; updated: number }
 export interface Doc {
@@ -131,7 +131,7 @@ export const api = {
     token = null; me = null
     return empty()
   },
-  async createOrg(org: { name: string; slug: string; type: string; description: string }, logo?: File) {
+  async createOrg(org: { name: string; slug: string; type: string; description: string; visibility?: 'public' | 'private' }, logo?: File) {
     const o = await call<Org>('/orgs', json('POST', org))
     localStorage.setItem(ORG_KEY, o.id)
     if (logo) {
@@ -151,6 +151,9 @@ export const api = {
   async createFolder(name: string) {
     await call(`/orgs/${orgId()}/folders`, json('POST', { name }))
     return reload()
+  },
+  setFolderAccess(folderId: string, access: { userId: string; view: boolean; upload: boolean; edit: boolean; delete: boolean }) {
+    return call(`/orgs/${orgId()}/folders/${folderId}/access`, json('PATCH', access))
   },
   async patchDocs(ids: string[], patch: Partial<Doc>) {
     const b = `/orgs/${orgId()}/documents`
@@ -172,6 +175,9 @@ export const api = {
     return reload()
   },
   members() { return call<{ members: Member[]; invites: Invite[] }>(`/orgs/${orgId()}/members`) },
+  memberSearch(q: string) { return call<{ items: { name: string; username: string; email: string }[] }>(`/orgs/${orgId()}/member-search?q=${encodeURIComponent(q)}`) },
+  requests() { return call<{ items: { id: string; userId: string; name: string; username: string; createdAt: string }[] }>(`/orgs/${orgId()}/requests`) },
+  decideRequest(id: string, status: 'approved' | 'rejected') { return call(`/orgs/${orgId()}/requests/${id}`, json('PATCH', { status })) },
   invite(target: { email?: string; username?: string }, role: 'admin' | 'member') { return call(`/orgs/${orgId()}/invites`, json('POST', { ...target, role })) },
   usage() { return call<Usage>(`/orgs/${orgId()}/usage`) },
   links() { return call<{ items: JoinLink[] }>(`/orgs/${orgId()}/links`) },
@@ -212,13 +218,24 @@ export const api = {
   forgot(email: string) { return call('/auth/forgot', json('POST', { email })) },
   reset(token: string, password: string) { return call('/auth/reset', json('POST', { token, password })) },
   resendVerification() { return call('/auth/verify/send', { method: 'POST' }) },
+  updateProfile(profile: { name: string; bio: string; socialLinks: Record<string, string>; profilePublic: boolean }) {
+    return call<{ user: User }>('/profile', json('PATCH', profile))
+  },
+  async uploadAvatar(file: File) {
+    const fd = new FormData()
+    fd.append('avatar', file)
+    return call<{ user: User }>('/profile/avatar', { method: 'POST', body: fd })
+  },
+  publicProfile(username: string) { return call<User>(`/profile/${encodeURIComponent(username)}`) },
+  publicOrganizations() { return call<{ items: { id: string; name: string; slug: string; type: string; description: string; logoUrl: string | null }[] }>('/organizations/public') },
+  requestToJoin(orgId: string) { return call(`/organizations/${orgId}/request`, { method: 'POST' }) },
   async verifyEmail(t: string) {
     await call('/auth/verify', json('POST', { token: t }))
     return token ? snapshot(await fetchMe()) : null
   },
   async session() { return snapshot(await fetchMe()) },
-  async updateOrg(name: string, description: string) {
-    await call(`/orgs/${orgId()}`, json('PATCH', { name, description }))
+  async updateOrg(name: string, description: string, visibility: 'public' | 'private') {
+    await call(`/orgs/${orgId()}`, json('PATCH', { name, description, visibility }))
     return snapshot(await fetchMe())
   },
   async setLogo(file: File) {
