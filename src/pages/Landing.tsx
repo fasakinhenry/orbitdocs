@@ -1,17 +1,17 @@
 import { Link } from 'react-router-dom'
-import { FileDoc, FilePdf, FolderSimple, LockKey, MagnifyingGlass } from '@phosphor-icons/react'
+import { FileDoc, FilePdf, FolderSimple, Globe, LinkSimple, LockKey, MagnifyingGlass, UserCircle, UsersThree } from '@phosphor-icons/react'
 import { Logo, ghost, primary } from '../components/ui'
 
 const FEATURES = [
   { icon: FolderSimple, title: 'One home for every file', text: 'Documents belong to your organization, so nothing disappears when a volunteer or team lead moves on.' },
-  { icon: LockKey, title: 'Permissions that make sense', text: 'Members can upload and contribute without being able to delete official documents. Admins stay in control.' },
+  { icon: LockKey, title: 'Permissions that make sense', text: 'Set organization roles and folder-level access for viewing, uploading, editing, and deleting.' },
   { icon: MagnifyingGlass, title: 'Find it in seconds', text: 'Search, filter, and sort across folders, uploaders, and approval status, even from your phone.' },
 ]
 
 const STEPS = [
-  ['Create your workspace', 'Name your organization and add a logo. We set up starter folders for you.'],
-  ['Invite your team', 'Send invitations by email and choose who can approve and delete.'],
-  ['Keep everything in one place', 'Upload from any device, send files for review, and find them later in seconds.'],
+  ['Start with your personal workspace', 'Sign up and get a private workspace immediately. Create an organization only when you are ready.'],
+  ['Bring people in your way', 'Invite by email or username, share a join link, or let people discover your public organization.'],
+  ['Keep everything in one place', 'Upload from any device, send files for review, and control access folder by folder.'],
 ]
 
 function Preview() {
@@ -68,6 +68,27 @@ export default function Landing() {
           ))}
         </section>
         <section className="border-t border-slate-100 py-16">
+          <div className="max-w-2xl">
+            <p className="text-sm font-medium text-brand">Built for how communities work</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Start solo. Grow into a community.</h2>
+            <p className="mt-3 text-slate-500">OrbitDocs gives every person a private starting point, then makes it simple to find, join, and manage the organizations that matter to them.</p>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {[
+              { icon: UserCircle, title: 'Your profile, your identity', text: 'Add a profile picture, bio, and social links. Choose whether your profile is public.' },
+              { icon: Globe, title: 'Public or private organizations', text: 'Make a community discoverable with join requests, or keep it private behind invitations and links.' },
+              { icon: LinkSimple, title: 'Join without the friction', text: 'People can join from an organization link, see where they are going, and keep their personal workspace too.' },
+              { icon: UsersThree, title: 'Clear roles for every team', text: 'Owners and admins can delegate responsibility, approve requests, and give members exactly the access they need.' },
+            ].map(({ icon: Icon, title, text }) => (
+              <div key={title} className="rounded-2xl bg-slate-50 p-5">
+                <Icon size={24} className="text-brand" />
+                <h3 className="mt-4 font-semibold">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">{text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="border-t border-slate-100 py-16">
           <h2 className="text-2xl font-semibold tracking-tight">Up and running in minutes</h2>
           <ol className="mt-10 grid gap-10 md:grid-cols-3">
             {STEPS.map(([t, d], i) => (
@@ -75,6 +96,7 @@ export default function Landing() {
             ))}
           </ol>
           <div className="mt-12"><Link to="/signup" className={`${primary} h-12 px-6 text-base`}>Get started</Link></div>
+          <div className="mt-6"><Link to="/organizations" className="text-sm font-medium text-brand hover:text-brand-dark">Explore public organizations</Link></div>
         </section>
       </main>
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 py-6 text-sm text-slate-400">
