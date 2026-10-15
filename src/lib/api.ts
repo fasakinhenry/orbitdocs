@@ -221,6 +221,7 @@ export const api = {
   updateProfile(profile: { name: string; bio: string; socialLinks: Record<string, string>; profilePublic: boolean }) {
     return call<{ user: User }>('/profile', json('PATCH', profile))
   },
+  deleteProfile() { return call('/profile', { method: 'DELETE' }) },
   async uploadAvatar(file: File) {
     const fd = new FormData()
     fd.append('avatar', file)
@@ -236,6 +237,11 @@ export const api = {
   async session() { return snapshot(await fetchMe()) },
   async updateOrg(name: string, description: string, visibility: 'public' | 'private') {
     await call(`/orgs/${orgId()}`, json('PATCH', { name, description, visibility }))
+    return snapshot(await fetchMe())
+  },
+  async deleteOrg() {
+    await call(`/orgs/${orgId()}`, { method: 'DELETE' })
+    localStorage.removeItem(ORG_KEY)
     return snapshot(await fetchMe())
   },
   async setLogo(file: File) {

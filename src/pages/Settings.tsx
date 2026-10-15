@@ -34,6 +34,11 @@ export default function Settings() {
     try { setDb(await api.setLogo(f)); say('Logo updated') } catch (x) { say((x as Error).message) }
   }
 
+  async function deleteOrganization() {
+    if (!window.confirm(`This permanently deletes "${org.name}" and all of its files. Continue?`)) return
+    try { setDb(await api.deleteOrg()); say('Organization deleted') } catch (x) { say((x as Error).message) }
+  }
+
   return (
     <div className="px-4 pb-28 pt-8 md:px-10">
       <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Settings</h1>
@@ -85,6 +90,13 @@ export default function Settings() {
             </div>
             <button type="button" className={primary} disabled={!folderId || !memberId} onClick={() => api.setFolderAccess(folderId, { userId: memberId, ...permissions }).then(() => say('Folder access updated')).catch((e: Error) => say(e.message))}>Save folder access</button>
           </div>
+        </section>
+      )}
+      {org.role === 'owner' && (
+        <section className="mt-14 max-w-xl border-t border-red-100 pt-8">
+          <h2 className="text-base font-semibold text-red-700">Delete organization</h2>
+          <p className="mt-1.5 text-sm text-slate-500">Permanently delete this organization and all of its folders, files, members, and invitations.</p>
+          <button type="button" className="mt-4 rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50" onClick={deleteOrganization}>Delete organization</button>
         </section>
       )}
     </div>

@@ -18,7 +18,7 @@ export default function Profile() {
     e.preventDefault()
     setBusy(true)
     try {
-      const r = await api.updateProfile({ name: name.trim(), bio: bio.trim(), socialLinks: links, profilePublic })
+      const r = await api.updateProfile({ name: name.trim(), bio: bio.trim(), socialLinks: links, profilePublic: publicProfile })
       setDb({ ...db, user: r.user })
       say('Profile saved')
     } catch (e) { say((e as Error).message) } finally { setBusy(false) }
@@ -33,6 +33,15 @@ export default function Profile() {
       setDb({ ...db, user: r.user })
       say('Profile picture updated')
     } catch (x) { say((x as Error).message) }
+  }
+
+  async function removeAccount() {
+    if (!window.confirm('This permanently deletes your profile, account, and personal workspace. Continue?')) return
+    try {
+      await api.deleteProfile()
+      setDb(await api.signOut())
+      nav('/')
+    } catch (e) { say((e as Error).message) }
   }
 
   return (
@@ -57,6 +66,11 @@ export default function Profile() {
         <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={publicProfile} onChange={(e) => setPublicProfile(e.target.checked)} />Make my profile public</label>
         <button disabled={busy} className={primary}>{busy ? 'Saving' : 'Save profile'}</button>
       </form>
+      <section className="mt-14 border-t border-red-100 pt-8">
+        <h2 className="text-base font-semibold text-red-700">Delete profile</h2>
+        <p className="mt-1.5 text-sm text-slate-500">Permanently delete your account and personal workspace. You must delete organizations you own first.</p>
+        <button type="button" className="mt-4 rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50" onClick={removeAccount}>Delete my profile</button>
+      </section>
     </div>
   )
 }
