@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand: #287bff;
+  --color-brand-dark: #1d66dc;
+  --color-brand-soft: #eaf2ff;
+  --color-ink: #0f172a;
+}
+
+body { @apply bg-white font-sans text-ink antialiased; }
+:focus-visible { outline: 2px solid #287bff; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

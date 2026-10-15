@@ -1,0 +1,39 @@
+import type { ReactNode } from 'react'
+import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
+import { useApp } from './lib/store'
+import Landing from './pages/Landing'
+import Auth from './pages/Auth'
+import Onboarding from './pages/Onboarding'
+import Dashboard from './pages/Dashboard'
+import Invite from './pages/Invite'
+import Join from './pages/Join'
+import Admin from './pages/Admin'
+import { Forgot, Reset, Verify } from './pages/Recover'
+
+function Guard({ children, needOrg }: { children: ReactNode; needOrg?: boolean }) {
+  const { db } = useApp()
+  const [sp] = useSearchParams()
+  if (!db.signedIn) return <Navigate to="/signin" replace />
+  if (needOrg && !db.org) return <Navigate to="/onboarding" replace />
+  if (!needOrg && db.org && !sp.get('new')) return <Navigate to="/app" replace />
+  return <>{children}</>
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/signin" element={<Auth mode="signin" />} />
+      <Route path="/signup" element={<Auth mode="signup" />} />
+      <Route path="/forgot" element={<Forgot />} />
+      <Route path="/reset/:token" element={<Reset />} />
+      <Route path="/verify/:token" element={<Verify />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/join/:token" element={<Join />} />
+      <Route path="/invite/:token" element={<Invite />} />
+      <Route path="/onboarding" element={<Guard><Onboarding /></Guard>} />
+      <Route path="/app/:view?" element={<Guard needOrg><Dashboard /></Guard>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
