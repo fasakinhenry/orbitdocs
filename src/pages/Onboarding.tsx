@@ -91,7 +91,7 @@ function OnboardingForm() {
 export default function Onboarding() {
   const { db } = useApp()
   const [sp] = useSearchParams()
-  const [create] = useState(!db.org?.personal || !sp.get('new') || !!sp.get('create'))
+  const create = !db.org?.personal || !sp.get('new') || !!sp.get('create')
   if (!sp.get('new') || !db.org?.personal) return <OnboardingForm />
   if (create) return <OnboardingForm />
   return <OnboardingChoice />
