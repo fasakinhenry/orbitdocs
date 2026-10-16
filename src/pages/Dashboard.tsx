@@ -245,7 +245,7 @@ export default function Dashboard() {
                     <p className="mt-4 truncate pr-8 text-sm font-medium">{f.name}</p>
                     <p className="mt-0.5 text-xs text-slate-400">{live.filter((d) => d.folderId === f.id).length} files, {ago(f.updated)}</p>
                   </button>
-                  {(admin || personal) && <Menu wrapperClassName="absolute right-2 top-2 z-10" className="grid size-8 place-items-center rounded-lg bg-white/90 text-slate-500 opacity-0 shadow-sm ring-1 ring-slate-200 transition-opacity group-hover:opacity-100 hover:bg-white hover:text-slate-900" label={<DotsThree size={20} weight="bold" />} panel="right-0 mt-1">
+                  {(admin || personal) && <Menu wrapperClassName="absolute right-2 top-2 z-10" className="grid size-8 place-items-center rounded-lg bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-200 transition-opacity hover:bg-white hover:text-slate-900 md:opacity-0 md:group-hover:opacity-100" label={<DotsThree size={20} weight="bold" />} panel="right-0 mt-1">
                   {(close) => <>
                     <MenuItem icon={<PencilSimple size={17} />} onClick={() => { close(); setFolderErr(''); setRenameTarget({ id: f.id, name: f.name }) }}>Rename</MenuItem>
                     <MenuItem icon={<Copy size={17} />} onClick={() => { close(); void duplicateFolder(f.id) }}>Duplicate</MenuItem>
