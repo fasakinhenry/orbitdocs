@@ -44,6 +44,15 @@ export default function Profile() {
     } catch (e) { say((e as Error).message) }
   }
 
+  async function leaveOrganization(id: string, name: string) {
+    if (!window.confirm(`Leave ${name}? You will lose access to its documents and members.`)) return
+    try {
+      localStorage.setItem('orbitdocs.org', id)
+      setDb(await api.leaveOrg())
+      say(`You left ${name}`)
+    } catch (e) { say((e as Error).message) }
+  }
+
   return (
     <div className="mx-auto max-w-xl px-4 pb-28 pt-8 md:px-10">
       <button className="text-sm text-slate-500 hover:text-slate-900" onClick={() => nav('/app')}>Back to workspace</button>
@@ -56,8 +65,9 @@ export default function Profile() {
           {db.orgs.map((org) => (
             <li key={org.id} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
               <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-sm font-semibold text-brand">{org.name[0].toUpperCase()}</span>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">{org.name}</span>
+              <button type="button" className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:text-brand" onClick={async () => { setDb(await api.switchOrg(org.id)); nav('/app') }}>{org.name}</button>
               <span className="text-xs capitalize text-slate-400">{org.personal ? 'Personal' : org.role}</span>
+              {!org.personal && org.role !== 'owner' && <button type="button" className="text-xs font-medium text-red-600 hover:text-red-700" onClick={() => void leaveOrganization(org.id, org.name)}>Leave</button>}
             </li>
           ))}
         </ul>
