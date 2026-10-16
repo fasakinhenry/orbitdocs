@@ -190,7 +190,9 @@ export const api = {
   memberSearch(q: string) { return call<{ items: { name: string; username: string; email: string }[] }>(`/orgs/${orgId()}/member-search?q=${encodeURIComponent(q)}`) },
   requests() { return call<{ items: { id: string; userId: string; name: string; username: string; createdAt: string }[] }>(`/orgs/${orgId()}/requests`) },
   decideRequest(id: string, status: 'approved' | 'rejected') { return call(`/orgs/${orgId()}/requests/${id}`, json('PATCH', { status })) },
-  invite(target: { email?: string; username?: string }, role: 'admin' | 'member') { return call(`/orgs/${orgId()}/invites`, json('POST', { ...target, role })) },
+  invite(target: { email?: string; username?: string }, role: 'admin' | 'member') {
+    return call<{ emailSent?: boolean }>(`/orgs/${orgId()}/invites`, json('POST', { ...target, role }))
+  },
   usage() { return call<Usage>(`/orgs/${orgId()}/usage`) },
   links() { return call<{ items: JoinLink[] }>(`/orgs/${orgId()}/links`) },
   createLink(days: number) { return call<JoinLink>(`/orgs/${orgId()}/links`, json('POST', { days })) },
@@ -221,6 +223,11 @@ export const api = {
   revokeInvite(id: string) { return call(`/orgs/${orgId()}/invites/${id}`, { method: 'DELETE' }) },
   setRole(userId: string, role: 'admin' | 'member') { return call(`/orgs/${orgId()}/members/${userId}`, json('PATCH', { role })) },
   removeMember(userId: string) { return call(`/orgs/${orgId()}/members/${userId}`, { method: 'DELETE' }) },
+  async leaveOrg() {
+    await call(`/orgs/${orgId()}/leave`, { method: 'POST' })
+    localStorage.removeItem(ORG_KEY)
+    return snapshot(await fetchMe())
+  },
   invitePreview(token: string) { return call<InvitePreview>(`/invites/${token}`) },
   async acceptInvite(token: string) {
     const { orgId: id } = await call<{ orgId: string }>(`/invites/${token}/accept`, { method: 'POST' })

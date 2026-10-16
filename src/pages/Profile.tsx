@@ -49,6 +49,20 @@ export default function Profile() {
       <button className="text-sm text-slate-500 hover:text-slate-900" onClick={() => nav('/app')}>Back to workspace</button>
       <h1 className="mt-6 text-2xl font-semibold tracking-tight">Profile</h1>
       <p className="mt-1.5 text-sm text-slate-500">Manage your public profile and social links.</p>
+      <section className="mt-8 rounded-2xl border border-slate-200 p-5">
+        <h2 className="font-semibold">Your organizations</h2>
+        <p className="mt-1 text-sm text-slate-500">Switch between your personal workspace and the organizations you belong to.</p>
+        <ul className="mt-4 space-y-2">
+          {db.orgs.map((org) => (
+            <li key={org.id} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-soft text-sm font-semibold text-brand">{org.name[0].toUpperCase()}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{org.name}</span>
+              <span className="text-xs capitalize text-slate-400">{org.personal ? 'Personal' : org.role}</span>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className="mt-4 text-sm font-medium text-brand hover:text-brand-dark" onClick={() => nav('/organizations')}>Explore organizations</button>
+      </section>
       <div className="mt-8 flex items-center gap-4">
         {user.avatarUrl
           ? <img src={user.avatarUrl} alt="" className="size-16 rounded-full object-cover" />

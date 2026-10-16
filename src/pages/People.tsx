@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X } from '@phosphor-icons/react'
 import { api, type Invite, type JoinLink, type Member, type Role } from '../lib/api'
 import { useApp } from '../lib/store'
@@ -7,7 +8,8 @@ import { ghost, input, primary } from '../components/ui'
 const ROLE_LABEL: Record<Role, string> = { owner: 'Owner', admin: 'Admin', member: 'Member' }
 
 export default function People() {
-  const { db, say } = useApp()
+  const { db, setDb, say } = useApp()
+  const nav = useNavigate()
   const org = db.org!
   const me = db.user!
   const admin = org.role !== 'member'
@@ -30,6 +32,11 @@ export default function People() {
   async function act(fn: () => Promise<unknown>, ok: string) {
     try { await fn(); say(ok); await load() } catch (e) { say((e as Error).message) }
   }
+  async function leave() {
+    if (org.role === 'owner') return say('The organization owner cannot leave.')
+    if (!window.confirm(`Leave ${org.name}? You will need a new invitation or join link to return.`)) return
+    try { setDb(await api.leaveOrg()); nav('/app'); say(`You left ${org.name}`) } catch (e) { say((e as Error).message) }
+  }
   async function send(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
@@ -39,8 +46,12 @@ export default function People() {
     if (isEmail ? !/^\S+@\S+\.\S+$/.test(to) : !/^@?[a-zA-Z0-9_]{3,20}$/.test(to)) return setErr('Enter an email address or a username.')
     setBusy(true); setErr('')
     try {
-      await api.invite(isEmail ? { email: to } : { username: to.replace(/^@/, '') }, String(f.get('role')) as 'admin' | 'member')
-      form.reset(); say(`Invitation sent to ${isEmail ? to : `@${to.replace(/^@/, '')}`}`); await load()
+      const result = await api.invite(isEmail ? { email: to } : { username: to.replace(/^@/, '') }, String(f.get('role')) as 'admin' | 'member')
+      form.reset()
+      say(result.emailSent === false
+        ? `Invite successful, but email delivery failed. They can accept it in OrbitDocs.`
+        : `Invitation sent to ${isEmail ? to : `@${to.replace(/^@/, '')}`}`)
+      await load()
     } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
   }
   function search(e: ChangeEvent<HTMLInputElement>) {
@@ -52,7 +63,10 @@ export default function People() {
   return (
     <div className="px-4 pb-28 pt-8 md:px-10">
       <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">People</h1>
-      <p className="mt-1.5 text-sm text-slate-500">{org.name}</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-slate-500">{org.name}{org.description ? ` · ${org.description}` : ''}</p>
+        {!owner && <button className="text-sm font-medium text-red-600 hover:text-red-700" onClick={() => void leave()}>Leave organization</button>}
+      </div>
 
       {admin && (
         <form onSubmit={send} className="mt-10 max-w-2xl" noValidate>

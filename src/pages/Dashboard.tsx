@@ -161,6 +161,7 @@ export default function Dashboard() {
             ))}
             {db.invites.map((i) => <MenuItem key={i.id} icon={<Plus size={18} />} onClick={() => { close(); acceptMine(i.id) }}>Join {i.orgName}</MenuItem>)}
             <div className="my-1 border-t border-slate-100" />
+            <MenuItem icon={<MagnifyingGlass size={18} />} onClick={() => { close(); nav('/organizations') }}>Explore organizations</MenuItem>
             <MenuItem icon={<Plus size={18} />} onClick={() => { close(); nav('/onboarding?new=1') }}>New workspace</MenuItem>
           </>}
         </Menu>
@@ -215,6 +216,14 @@ export default function Dashboard() {
               ? <><button className="hover:text-slate-900" onClick={() => setSp({})}>All documents</button> / <span className="text-slate-900">{folderName(folderId)}</span></>
               : org.name}
           </p>
+          {showHome && db.invites.length > 0 && (
+            <section className="mt-8 rounded-2xl border border-brand/20 bg-brand-soft p-4">
+              <p className="text-sm font-semibold">{db.invites.length === 1 ? 'You have an organization invitation' : `You have ${db.invites.length} organization invitations`}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {db.invites.map((i) => <button key={i.id} className={`${primary} h-9`} onClick={() => acceptMine(i.id)}>Join {i.orgName}</button>)}
+              </div>
+            </section>
+          )}
 
           {showHome && db.folders.length > 0 && (
             <section className="mt-10">
@@ -268,7 +277,7 @@ export default function Dashboard() {
                   : <button className={`${ghost} mt-6`} onClick={() => setFolderModal(true)}><FolderPlus size={16} />Create a folder</button>)}
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-slate-200">
+              <div className="overflow-visible rounded-2xl border border-slate-200">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs text-slate-500">
                     <tr>
