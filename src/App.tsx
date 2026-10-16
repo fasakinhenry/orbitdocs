@@ -13,6 +13,7 @@ import Profile from './pages/Profile'
 import Organizations from './pages/Organizations'
 import Policy from './pages/Policy'
 import CookieConsent from './components/CookieConsent'
+import NotFound from './pages/NotFound'
 
 function Guard({ children, needOrg, allowOrg }: { children: ReactNode; needOrg?: boolean; allowOrg?: boolean }) {
   const { db } = useApp()
@@ -48,7 +49,7 @@ export default function App() {
         <Route path="/invite/:token" element={<Invite />} />
         <Route path="/onboarding" element={<Guard><Onboarding /></Guard>} />
         <Route path="/app/:view?" element={<Guard needOrg><Dashboard /></Guard>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <CookieConsent />
     </>
