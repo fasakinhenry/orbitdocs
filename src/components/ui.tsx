@@ -30,7 +30,7 @@ export function Menu({ label, className, wrapperClassName = '', panel = 'right-0
     return () => { document.removeEventListener('mousedown', click); document.removeEventListener('keydown', key) }
   }, [open])
   return (
-    <div ref={ref} className={`relative ${wrapperClassName}`}>
+    <div ref={ref} className={wrapperClassName || 'relative'}>
       <button type="button" className={className} aria-haspopup="menu" aria-expanded={open} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }}>{label}</button>
       {open && (
         <div role="menu" className={`absolute z-30 min-w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-lg ${panel}`}>
