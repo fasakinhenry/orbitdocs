@@ -156,6 +156,14 @@ export const api = {
     await call(`/orgs/${orgId()}/folders/${folderId}`, { method: 'DELETE' })
     return reload()
   },
+  async renameFolder(folderId: string, name: string) {
+    await call(`/orgs/${orgId()}/folders/${folderId}`, json('PATCH', { name }))
+    return reload()
+  },
+  async duplicateFolder(folderId: string) {
+    await call(`/orgs/${orgId()}/folders/${folderId}/duplicate`, { method: 'POST' })
+    return reload()
+  },
   setFolderAccess(folderId: string, access: { userId: string; view: boolean; upload: boolean; edit: boolean; delete: boolean }) {
     return call(`/orgs/${orgId()}/folders/${folderId}/access`, json('PATCH', access))
   },

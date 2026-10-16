@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowCounterClockwise, CaretDown, Clock, DotsThree, EnvelopeSimple, FileDoc, FileImage, FilePdf, FilePpt, FileText, FileVideo, FileXls,
-  Files, FolderPlus, FolderSimple, List, MagnifyingGlass, Plus, SignOut, Star, Trash, UploadSimple, X, DownloadSimple, UsersThree, GearSix, ShieldCheck, Eye, CaretUpDown, Check, PaperPlaneTilt, CheckCircle, ArrowUUpLeft, Pulse, type Icon,
+  ArrowCounterClockwise, CaretDown, Clock, Copy, DotsThree, EnvelopeSimple, FileDoc, FileImage, FilePdf, FilePpt, FileText, FileVideo, FileXls,
+  Files, FolderPlus, FolderSimple, List, MagnifyingGlass, PencilSimple, Plus, SignOut, Star, Trash, UploadSimple, X, DownloadSimple, UsersThree, GearSix, ShieldCheck, Eye, CaretUpDown, Check, PaperPlaneTilt, CheckCircle, ArrowUUpLeft, Pulse, type Icon,
 } from '@phosphor-icons/react'
 import { api, type Doc, type Status } from '../lib/api'
 import { useApp } from '../lib/store'
@@ -52,6 +52,8 @@ export default function Dashboard() {
   const [drawer, setDrawer] = useState(false)
   const [folderModal, setFolderModal] = useState(false)
   const [folderErr, setFolderErr] = useState('')
+  const [renameTarget, setRenameTarget] = useState<{ id: string; name: string }>()
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string }>()
   const [preview, setPreview] = useState<Doc | null>(null)
   const [shown, setShown] = useState(50)
   const file = useRef<HTMLInputElement>(null)
@@ -93,8 +95,18 @@ export default function Dashboard() {
     try { setDb(await api.createFolder(name.trim())); setFolderModal(false); setFolderErr(''); say('Folder created') } catch (e) { setFolderErr((e as Error).message) }
   }
   async function deleteFolder(id: string, name: string) {
-    if (!window.confirm(`Delete the "${name}" folder? It must be empty first.`)) return
-    try { setDb(await api.deleteFolder(id)); setSp({}); say('Folder deleted') } catch (e) { say((e as Error).message) }
+    setDeleteTarget({ id, name })
+  }
+  async function renameFolder(id: string, name: string) {
+    if (!name.trim()) return setFolderErr('Give the folder a name.')
+    try { setDb(await api.renameFolder(id, name.trim())); setRenameTarget(undefined); setFolderErr(''); say('Folder renamed') } catch (e) { setFolderErr((e as Error).message) }
+  }
+  async function duplicateFolder(id: string) {
+    try { setDb(await api.duplicateFolder(id)); say('Folder duplicated') } catch (e) { say((e as Error).message) }
+  }
+  async function confirmDeleteFolder() {
+    if (!deleteTarget) return
+    try { setDb(await api.deleteFolder(deleteTarget.id)); setDeleteTarget(undefined); setSp({}); say('Folder deleted') } catch (e) { setDeleteTarget(undefined); say((e as Error).message) }
   }
   async function setStatus(ids: string[], status: Status, msg: string) {
     try { setDb(await (status === 'pending' ? api.submit(ids) : api.setStatus(ids, status))); setSel([]); say(msg) } catch (e) { say((e as Error).message) }
@@ -215,8 +227,12 @@ export default function Dashboard() {
                     <p className="mt-4 truncate pr-8 text-sm font-medium">{f.name}</p>
                     <p className="mt-0.5 text-xs text-slate-400">{live.filter((d) => d.folderId === f.id).length} files, {ago(f.updated)}</p>
                   </button>
-                  {(admin || personal) && <Menu className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100" label={<DotsThree size={20} />} panel="right-0 mt-1">
-                    {(close) => <MenuItem icon={<Trash size={17} />} danger onClick={() => { close(); void deleteFolder(f.id, f.name) }}>Delete folder</MenuItem>}
+                  {(admin || personal) && <Menu className="absolute left-2 top-2 opacity-0 transition-opacity group-hover:opacity-100" label={<DotsThree size={20} />} panel="left-0 mt-1">
+                  {(close) => <>
+                    <MenuItem icon={<PencilSimple size={17} />} onClick={() => { close(); setFolderErr(''); setRenameTarget({ id: f.id, name: f.name }) }}>Rename</MenuItem>
+                    <MenuItem icon={<Copy size={17} />} onClick={() => { close(); void duplicateFolder(f.id) }}>Duplicate</MenuItem>
+                    <MenuItem icon={<Trash size={17} />} danger onClick={() => { close(); deleteFolder(f.id, f.name) }}>Delete</MenuItem>
+                  </>}
                   </Menu>}
                   </div>
                 ))}
@@ -337,6 +353,27 @@ export default function Dashboard() {
               <button className={primary}>Create folder</button>
             </div>
           </form>
+        </Modal>
+      )}
+      {renameTarget && (
+        <Modal title="Rename folder" onClose={() => { setRenameTarget(undefined); setFolderErr('') }}>
+          <form className="mt-4" onSubmit={(e) => { e.preventDefault(); void renameFolder(renameTarget.id, String(new FormData(e.currentTarget).get('name') ?? '')) }}>
+            <input name="name" autoFocus defaultValue={renameTarget.name} aria-label="Folder name" className={input} />
+            {folderErr && <p role="alert" className="mt-2 text-sm text-red-600">{folderErr}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" className={ghost} onClick={() => { setRenameTarget(undefined); setFolderErr('') }}>Cancel</button>
+              <button className={primary}>Rename folder</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {deleteTarget && (
+        <Modal title="Delete folder" onClose={() => setDeleteTarget(undefined)}>
+          <p className="mt-3 text-sm leading-relaxed text-slate-500">Delete “{deleteTarget.name}”? This folder must be empty first. This action cannot be undone.</p>
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" className={ghost} onClick={() => setDeleteTarget(undefined)}>Cancel</button>
+            <button type="button" className="inline-flex h-10 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700" onClick={() => void confirmDeleteFolder()}>Delete folder</button>
+          </div>
         </Modal>
       )}
     </div>
