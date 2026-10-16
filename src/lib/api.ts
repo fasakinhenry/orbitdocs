@@ -2,7 +2,7 @@
 // The UI works with one snapshot (DB) of the active organization, which is refetched after every change.
 export type Status = 'approved' | 'pending' | 'draft'
 export type Role = 'owner' | 'admin' | 'member'
-export interface User { id: string; name: string; username: string; email: string; emailVerified: boolean; isAdmin: boolean; avatarUrl?: string | null; bio?: string; socialLinks?: Record<string, string>; profilePublic?: boolean }
+export interface User { id: string; name: string; username: string; email: string; emailVerified: boolean; isAdmin: boolean; avatarUrl?: string | null; bio?: string; socialLinks?: Record<string, string>; profilePublic?: boolean; defaultView?: 'list' | 'grid' }
 export interface Org { id: string; name: string; slug: string; type: string; description?: string; role: Role; logoUrl: string | null; visibility?: 'public' | 'private'; personal?: boolean }
 export interface Note { id: string; text: string; at: string; read: boolean }
 export interface Folder { id: string; name: string; updated: number; visibility?: 'public' | 'private'; canManage?: boolean }
@@ -259,8 +259,11 @@ export const api = {
   forgot(email: string) { return call('/auth/forgot', json('POST', { email })) },
   reset(token: string, password: string) { return call('/auth/reset', json('POST', { token, password })) },
   resendVerification() { return call('/auth/verify/send', { method: 'POST' }) },
-  updateProfile(profile: { name: string; bio: string; socialLinks: Record<string, string>; profilePublic: boolean }) {
+  updateProfile(profile: { name: string; bio: string; socialLinks: Record<string, string>; profilePublic: boolean; defaultView?: 'list' | 'grid' }) {
     return call<{ user: User }>('/profile', json('PATCH', profile))
+  },
+  updateDefaultView(defaultView: 'list' | 'grid') {
+    return call<{ user: User }>('/profile', json('PATCH', { defaultView }))
   },
   deleteProfile() { return call('/profile', { method: 'DELETE' }) },
   async uploadAvatar(file: File) {

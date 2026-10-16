@@ -12,13 +12,14 @@ export default function Profile() {
   const [bio, setBio] = useState(user.bio ?? '')
   const [links, setLinks] = useState({ ...(user.socialLinks ?? {}) })
   const [publicProfile, setPublicProfile] = useState(user.profilePublic !== false)
+  const [defaultView, setDefaultView] = useState<'list' | 'grid'>(user.defaultView ?? 'list')
   const [busy, setBusy] = useState(false)
 
   async function save(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     try {
-      const r = await api.updateProfile({ name: name.trim(), bio: bio.trim(), socialLinks: links, profilePublic: publicProfile })
+      const r = await api.updateProfile({ name: name.trim(), bio: bio.trim(), socialLinks: links, profilePublic: publicProfile, defaultView })
       setDb({ ...db, user: r.user })
       say('Profile saved')
     } catch (e) { say((e as Error).message) } finally { setBusy(false) }
@@ -88,6 +89,12 @@ export default function Profile() {
           </label>
         ))}
         <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={publicProfile} onChange={(e) => setPublicProfile(e.target.checked)} />Make my profile public</label>
+        <label className="block text-sm font-medium">Default file view
+          <select value={defaultView} onChange={(e) => setDefaultView(e.target.value as 'list' | 'grid')} className={`${input} mt-1.5`}>
+            <option value="list">List / details</option>
+            <option value="grid">Grid</option>
+          </select>
+        </label>
         <button disabled={busy} className={primary}>{busy ? 'Saving' : 'Save profile'}</button>
       </form>
       <section className="mt-14 border-t border-red-100 pt-8">

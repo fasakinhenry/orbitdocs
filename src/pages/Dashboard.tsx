@@ -58,13 +58,20 @@ export default function Dashboard() {
   const [details, setDetails] = useState<Awaited<ReturnType<typeof api.documentDetails>> | null>(null)
   const [transfer, setTransfer] = useState<{ ids: string[]; action: 'copy' | 'move' }>()
   const [shown, setShown] = useState(50)
-  const [fileView, setFileView] = useState<'list' | 'grid'>('list')
+  const [fileView, setFileView] = useState<'list' | 'grid'>(db.user?.defaultView ?? 'list')
   const [folderVisibility, setFolderVisibility] = useState<'public' | 'private'>('public')
   const file = useRef<HTMLInputElement>(null)
   const org = db.org!
   const user = db.user!
   const folderName = (id: string) => db.folders.find((f) => f.id === id)?.name ?? 'Unsorted'
   const live = db.docs.filter((d) => !d.trashed)
+  async function chooseFileView(next: 'list' | 'grid') {
+    setFileView(next)
+    try {
+      const r = await api.updateDefaultView(next)
+      setDb({ ...db, user: r.user })
+    } catch (e) { say((e as Error).message) }
+  }
 
   const rows = useMemo(() => {
     let r = db.docs.filter((d) => (view === 'trash' ? d.trashed : !d.trashed))
@@ -280,8 +287,8 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 {rows.length > 0 && <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-900" onClick={() => setSel(allSel ? [] : rows.map((r) => r.id))}>{allSel ? 'Clear selection' : 'Select all'}</button>}
                 <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" aria-label="File view">
-                <button type="button" aria-label="List view" aria-pressed={fileView === 'list'} className={`grid size-8 place-items-center rounded-md ${fileView === 'list' ? 'bg-brand-soft text-brand' : 'text-slate-400 hover:text-slate-700'}`} onClick={() => setFileView('list')}><List size={17} /></button>
-                <button type="button" aria-label="Grid view" aria-pressed={fileView === 'grid'} className={`grid size-8 place-items-center rounded-md ${fileView === 'grid' ? 'bg-brand-soft text-brand' : 'text-slate-400 hover:text-slate-700'}`} onClick={() => setFileView('grid')}><SquaresFour size={17} /></button>
+                <button type="button" aria-label="List view" aria-pressed={fileView === 'list'} className={`grid size-8 place-items-center rounded-md ${fileView === 'list' ? 'bg-brand-soft text-brand' : 'text-slate-400 hover:text-slate-700'}`} onClick={() => void chooseFileView('list')}><List size={17} /></button>
+                <button type="button" aria-label="Grid view" aria-pressed={fileView === 'grid'} className={`grid size-8 place-items-center rounded-md ${fileView === 'grid' ? 'bg-brand-soft text-brand' : 'text-slate-400 hover:text-slate-700'}`} onClick={() => void chooseFileView('grid')}><SquaresFour size={17} /></button>
                 </div>
               </div>
             </div>
@@ -299,10 +306,27 @@ export default function Dashboard() {
             ) : (
               <div className={fileView === 'grid' ? '' : 'overflow-visible rounded-2xl border border-slate-200'}>
                 {fileView === 'grid' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {rows.slice(0, shown).map((d) => <article key={d.id} className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+                  {rows.slice(0, shown).map((d) => <article key={d.id} className="group relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
                     <div className="flex items-start gap-3">
                       <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-slate-50"><FileIcon name={d.name} size={25} /></div>
                       <div className="min-w-0 flex-1"><p className="truncate font-medium">{d.name}</p><p className="mt-1 truncate text-xs text-slate-400">{folderName(d.folderId)} · {fmtSize(d.size)}</p></div>
+                      <Menu wrapperClassName="relative z-10" className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100" label={<DotsThree size={20} weight="bold" />} panel="right-0 mt-1">
+                        {(close) => <>
+                          <MenuItem icon={<Eye size={18} />} onClick={() => { close(); setPreview(d) }}>Preview</MenuItem>
+                          <MenuItem icon={<FileText size={18} />} onClick={() => { close(); api.documentDetails(d.id).then(setDetails).catch((e: Error) => say(e.message)) }}>File details</MenuItem>
+                          <MenuItem icon={<DownloadSimple size={18} />} onClick={() => { close(); api.download(d.id).catch((e: Error) => say(e.message)) }}>Download</MenuItem>
+                          <MenuItem icon={<Copy size={18} />} onClick={() => { close(); setTransfer({ ids: [d.id], action: 'copy' }) }}>Copy to folder</MenuItem>
+                          <MenuItem icon={<FolderSimple size={18} />} onClick={() => { close(); setTransfer({ ids: [d.id], action: 'move' }) }}>Move to folder</MenuItem>
+                          <MenuItem icon={<Star size={18} weight={d.starred ? 'fill' : 'regular'} />} onClick={() => { close(); patch([d.id], { starred: !d.starred }, d.starred ? 'Removed star' : 'Starred') }}>{d.starred ? 'Remove star' : 'Star'}</MenuItem>
+                          {d.ownerId === user.id && d.status === 'draft' && <MenuItem icon={<PaperPlaneTilt size={18} />} onClick={() => { close(); setStatus([d.id], 'pending', 'Submitted for approval') }}>Submit for approval</MenuItem>}
+                          {d.ownerId === user.id && d.status === 'pending' && <MenuItem icon={<ArrowUUpLeft size={18} />} onClick={() => { close(); api.submit([d.id]).then(setDb).then(() => say('Approval submission removed')).catch((e: Error) => say(e.message)) }}>Remove approval submission</MenuItem>}
+                          {admin && d.status !== 'approved' && <MenuItem icon={<CheckCircle size={18} />} onClick={() => { close(); setStatus([d.id], 'approved', 'Approved') }}>Approve</MenuItem>}
+                          {admin && d.status === 'pending' && <MenuItem icon={<ArrowUUpLeft size={18} />} onClick={() => { close(); setStatus([d.id], 'draft', 'Returned to draft') }}>Return to draft</MenuItem>}
+                          {d.deleteRequested && admin && <MenuItem icon={<CheckCircle size={18} />} onClick={() => { close(); api.deleteDecision([d.id], true).then(() => api.session()).then(setDb).then(() => say('Deletion approved')).catch((e: Error) => say(e.message)) }}>Approve deletion</MenuItem>}
+                          {!admin && <MenuItem icon={<Trash size={18} />} danger onClick={() => { close(); api.deleteRequest([d.id]).then(setDb).then(() => say('Deletion request sent for approval')).catch((e: Error) => say(e.message)) }}>Request deletion</MenuItem>}
+                          {admin && <MenuItem icon={<Trash size={18} />} danger onClick={() => { close(); patch([d.id], { trashed: true }, 'Moved to trash') }}>Move to trash</MenuItem>}
+                        </>}
+                      </Menu>
                       <input type="checkbox" aria-label={`Select ${d.name}`} checked={sel.includes(d.id)} onChange={() => toggle(d.id)} className="mt-1 size-4 accent-brand" />
                     </div>
                     <div className="mt-5 flex items-center justify-between gap-2 text-xs text-slate-500"><span className={`rounded-full px-2.5 py-1 font-medium capitalize ${BADGE[d.status]}`}>{d.status}</span><span>{ago(d.modified)}</span></div>
