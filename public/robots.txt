@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /admin
+Disallow: /profile
+Disallow: /onboarding
+Disallow: /signin
+Disallow: /signup
+Disallow: /forgot
+Disallow: /reset/
+Disallow: /verify/
+Disallow: /invite/
+Disallow: /join/
+
+Sitemap: https://orbitdoc.vercel.app/sitemap.xml

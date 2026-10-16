@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { FileDoc, FilePdf, FolderSimple, Globe, LinkSimple, LockKey, MagnifyingGlass, UserCircle, UsersThree } from '@phosphor-icons/react'
 import { Logo, ghost, primary } from '../components/ui'
+import Seo from '../components/Seo'
 
 const FEATURES = [
   { icon: FolderSimple, title: 'One home for every file', text: 'Documents belong to your organization, so nothing disappears when a volunteer or team lead moves on.' },
@@ -38,6 +39,18 @@ function Preview() {
 export default function Landing() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-5 md:px-8">
+      <Seo title="OrbitDocs | Your team's knowledge, in one orbit" description="Secure document workspaces for individuals, teams, and community organizations. Organize, collaborate, and protect your shared knowledge." />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'OrbitDocs',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        description: 'Secure document workspaces for individuals, teams, and community organizations.',
+        url: 'https://orbitdoc.vercel.app/',
+        image: 'https://orbitdoc.vercel.app/og-image.svg',
+      }) }} />
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-slate-900 focus:px-4 focus:py-2 focus:text-sm focus:text-white">Skip to content</a>
       <header className="flex items-center justify-between py-6">
         <Link to="/" className="flex items-center gap-2.5 font-semibold"><Logo />OrbitDocs</Link>
         <nav className="flex items-center gap-2">
@@ -45,7 +58,7 @@ export default function Landing() {
           <Link to="/signin" className={ghost}>Sign in</Link>
         </nav>
       </header>
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <section className="mx-auto max-w-3xl py-20 text-center md:py-32">
           <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-6xl">Your team's knowledge, in one orbit.</h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-slate-500 text-pretty">
@@ -98,9 +111,14 @@ export default function Landing() {
           <div className="mt-6"><Link to="/organizations" className="text-sm font-medium text-brand hover:text-brand-dark">Explore public organizations</Link></div>
         </section>
       </main>
-      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 py-6 text-sm text-slate-400">
+      <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 py-6 text-sm text-slate-400">
         <span>OrbitDocs</span>
         <span>Made for FUTA Techies and every team like it.</span>
+        <nav aria-label="Legal" className="flex gap-4">
+          <Link to="/privacy" className="hover:text-slate-700">Privacy</Link>
+          <Link to="/terms" className="hover:text-slate-700">Terms</Link>
+          <Link to="/cookies" className="hover:text-slate-700">Cookies</Link>
+        </nav>
       </footer>
     </div>
   )

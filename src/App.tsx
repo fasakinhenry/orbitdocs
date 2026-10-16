@@ -11,6 +11,8 @@ import Admin from './pages/Admin'
 import { Forgot, Reset, Verify } from './pages/Recover'
 import Profile from './pages/Profile'
 import Organizations from './pages/Organizations'
+import Policy from './pages/Policy'
+import CookieConsent from './components/CookieConsent'
 
 function Guard({ children, needOrg, allowOrg }: { children: ReactNode; needOrg?: boolean; allowOrg?: boolean }) {
   const { db } = useApp()
@@ -28,21 +30,27 @@ function Home() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/signin" element={<Auth mode="signin" />} />
-      <Route path="/signup" element={<Auth mode="signup" />} />
-      <Route path="/forgot" element={<Forgot />} />
-      <Route path="/reset/:token" element={<Reset />} />
-      <Route path="/verify/:token" element={<Verify />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/profile" element={<Guard allowOrg><Profile /></Guard>} />
-      <Route path="/organizations" element={<Organizations />} />
-      <Route path="/join/:token" element={<Join />} />
-      <Route path="/invite/:token" element={<Invite />} />
-      <Route path="/onboarding" element={<Guard><Onboarding /></Guard>} />
-      <Route path="/app/:view?" element={<Guard needOrg><Dashboard /></Guard>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signin" element={<Auth mode="signin" />} />
+        <Route path="/signup" element={<Auth mode="signup" />} />
+        <Route path="/forgot" element={<Forgot />} />
+        <Route path="/reset/:token" element={<Reset />} />
+        <Route path="/verify/:token" element={<Verify />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/profile" element={<Guard allowOrg><Profile /></Guard>} />
+        <Route path="/organizations" element={<Organizations />} />
+        <Route path="/privacy" element={<Policy kind="privacy" />} />
+        <Route path="/terms" element={<Policy kind="terms" />} />
+        <Route path="/cookies" element={<Policy kind="cookies" />} />
+        <Route path="/join/:token" element={<Join />} />
+        <Route path="/invite/:token" element={<Invite />} />
+        <Route path="/onboarding" element={<Guard><Onboarding /></Guard>} />
+        <Route path="/app/:view?" element={<Guard needOrg><Dashboard /></Guard>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <CookieConsent />
+    </>
   )
 }

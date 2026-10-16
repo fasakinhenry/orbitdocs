@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useApp } from '../lib/store'
 import { ghost, primary } from '../components/ui'
+import Seo from '../components/Seo'
 
 export default function Organizations() {
   const { db, say } = useApp()
@@ -14,6 +15,7 @@ export default function Organizations() {
   const joined = new Set(db.orgs.filter((org) => !org.personal).map((org) => org.id))
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">
+      <Seo title="Explore organizations | OrbitDocs" description="Discover public OrbitDocs organizations and find communities to join." path="/organizations" />
       <Link to={db.signedIn ? '/app' : '/'} className="text-sm text-slate-500 hover:text-slate-900">{db.signedIn ? 'Back to workspace' : 'Back home'}</Link>
       <h1 className="mt-8 text-2xl font-semibold tracking-tight">Public organizations</h1>
       <p className="mt-2 text-sm text-slate-500">Discover communities and request to join.</p>
