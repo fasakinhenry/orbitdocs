@@ -5,7 +5,7 @@ export type Role = 'owner' | 'admin' | 'member'
 export interface User { id: string; name: string; username: string; email: string; emailVerified: boolean; isAdmin: boolean; avatarUrl?: string | null; bio?: string; socialLinks?: Record<string, string>; profilePublic?: boolean }
 export interface Org { id: string; name: string; slug: string; type: string; description?: string; role: Role; logoUrl: string | null; visibility?: 'public' | 'private'; personal?: boolean }
 export interface Note { id: string; text: string; at: string; read: boolean }
-export interface Folder { id: string; name: string; updated: number }
+export interface Folder { id: string; name: string; updated: number; visibility?: 'public' | 'private'; canManage?: boolean }
 export interface Doc {
   id: string; name: string; folderId: string; owner: string; ownerId: string; size: number
   modified: number; status: Status; starred: boolean; trashed: boolean; mime?: string; deleteRequested?: boolean
@@ -148,8 +148,8 @@ export const api = {
     await call(`/orgs/${orgId()}/documents`, { method: 'POST', body: fd })
     return reload()
   },
-  async createFolder(name: string) {
-    await call(`/orgs/${orgId()}/folders`, json('POST', { name }))
+  async createFolder(name: string, visibility: 'public' | 'private' = 'public') {
+    await call(`/orgs/${orgId()}/folders`, json('POST', { name, visibility }))
     return reload()
   },
   async deleteFolder(folderId: string) {

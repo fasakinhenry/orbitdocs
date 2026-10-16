@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowCounterClockwise, CaretDown, Clock, Copy, DotsThree, EnvelopeSimple, FileDoc, FileImage, FilePdf, FilePpt, FileText, FileVideo, FileXls,
-  Files, FolderPlus, FolderSimple, List, MagnifyingGlass, PencilSimple, Plus, SignOut, Star, Trash, UploadSimple, X, DownloadSimple, UsersThree, GearSix, ShieldCheck, Eye, CaretUpDown, Check, PaperPlaneTilt, CheckCircle, ArrowUUpLeft, Pulse, type Icon,
+  Files, FolderPlus, FolderSimple, List, SquaresFour, MagnifyingGlass, PencilSimple, Plus, SignOut, Star, Trash, UploadSimple, X, DownloadSimple, UsersThree, GearSix, ShieldCheck, Eye, CaretUpDown, Check, PaperPlaneTilt, CheckCircle, ArrowUUpLeft, Pulse, type Icon,
 } from '@phosphor-icons/react'
 import { api, type Doc, type Status } from '../lib/api'
 import { useApp } from '../lib/store'
@@ -58,6 +58,8 @@ export default function Dashboard() {
   const [details, setDetails] = useState<Awaited<ReturnType<typeof api.documentDetails>> | null>(null)
   const [transfer, setTransfer] = useState<{ ids: string[]; action: 'copy' | 'move' }>()
   const [shown, setShown] = useState(50)
+  const [fileView, setFileView] = useState<'list' | 'grid'>('list')
+  const [folderVisibility, setFolderVisibility] = useState<'public' | 'private'>('public')
   const file = useRef<HTMLInputElement>(null)
   const org = db.org!
   const user = db.user!
@@ -91,10 +93,10 @@ export default function Dashboard() {
       say(`${fs.length === 1 ? '1 file' : `${fs.length} files`} uploaded`)
     } catch (e) { say((e as Error).message) }
   }
-  async function addFolder(name: string) {
+  async function addFolder(name: string, visibility: 'public' | 'private') {
     if (!name.trim()) return setFolderErr('Give the folder a name.')
     if (db.folders.some((f) => f.name.toLowerCase() === name.trim().toLowerCase())) return setFolderErr('A folder with this name already exists.')
-    try { setDb(await api.createFolder(name.trim())); setFolderModal(false); setFolderErr(''); say('Folder created') } catch (e) { setFolderErr((e as Error).message) }
+    try { setDb(await api.createFolder(name.trim(), visibility)); setFolderModal(false); setFolderErr(''); setFolderVisibility('public'); say('Folder created') } catch (e) { setFolderErr((e as Error).message) }
   }
   async function deleteFolder(id: string, name: string) {
     setDeleteTarget({ id, name })
@@ -243,9 +245,9 @@ export default function Dashboard() {
                   <button onClick={() => setSp({ folder: f.id })} className="w-full text-left">
                     <FolderSimple size={30} weight="fill" className="text-brand/60" />
                     <p className="mt-4 truncate pr-8 text-sm font-medium">{f.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">{live.filter((d) => d.folderId === f.id).length} files, {ago(f.updated)}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">{live.filter((d) => d.folderId === f.id).length} files, {ago(f.updated)} · {f.visibility === 'private' ? 'Private' : 'Public'}</p>
                   </button>
-                  {(admin || personal) && <Menu wrapperClassName="absolute right-2 top-2 z-10" className="grid size-8 place-items-center rounded-lg bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-200 transition-opacity hover:bg-white hover:text-slate-900 md:opacity-0 md:group-hover:opacity-100" label={<DotsThree size={20} weight="bold" />} panel="right-0 mt-1">
+                  {(admin || personal || f.canManage) && <Menu wrapperClassName="absolute right-2 top-2 z-10" className="grid size-8 place-items-center rounded-lg bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-200 transition-opacity hover:bg-white hover:text-slate-900 md:opacity-0 md:group-hover:opacity-100" label={<DotsThree size={20} weight="bold" />} panel="right-0 mt-1">
                   {(close) => <>
                     <MenuItem icon={<PencilSimple size={17} />} onClick={() => { close(); setFolderErr(''); setRenameTarget({ id: f.id, name: f.name }) }}>Rename</MenuItem>
                     <MenuItem icon={<Copy size={17} />} onClick={() => { close(); void duplicateFolder(f.id) }}>Duplicate</MenuItem>
@@ -273,7 +275,16 @@ export default function Dashboard() {
           )}
 
           <section className="mt-10">
-            <h2 className="mb-3 text-sm font-medium text-slate-500">{view === 'all' ? 'All files' : `${rows.length} ${rows.length === 1 ? 'file' : 'files'}`}</h2>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-medium text-slate-500">{view === 'all' ? 'All files' : `${rows.length} ${rows.length === 1 ? 'file' : 'files'}`}</h2>
+              <div className="flex items-center gap-2">
+                {rows.length > 0 && <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-900" onClick={() => setSel(allSel ? [] : rows.map((r) => r.id))}>{allSel ? 'Clear selection' : 'Select all'}</button>}
+                <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" aria-label="File view">
+                <button type="button" aria-label="List view" aria-pressed={fileView === 'list'} className={`grid size-8 place-items-center rounded-md ${fileView === 'list' ? 'bg-brand-soft text-brand' : 'text-slate-400 hover:text-slate-700'}`} onClick={() => setFileView('list')}><List size={17} /></button>
+                <button type="button" aria-label="Grid view" aria-pressed={fileView === 'grid'} className={`grid size-8 place-items-center rounded-md ${fileView === 'grid' ? 'bg-brand-soft text-brand' : 'text-slate-400 hover:text-slate-700'}`} onClick={() => setFileView('grid')}><SquaresFour size={17} /></button>
+                </div>
+              </div>
+            </div>
             {rows.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
                 <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-50 text-slate-300"><FolderSimple size={34} /></div>
@@ -286,7 +297,19 @@ export default function Dashboard() {
                   : <button className={`${ghost} mt-6`} onClick={() => setFolderModal(true)}><FolderPlus size={16} />Create a folder</button>)}
               </div>
             ) : (
-              <div className="overflow-visible rounded-2xl border border-slate-200">
+              <div className={fileView === 'grid' ? '' : 'overflow-visible rounded-2xl border border-slate-200'}>
+                {fileView === 'grid' && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {rows.slice(0, shown).map((d) => <article key={d.id} className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+                    <div className="flex items-start gap-3">
+                      <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-slate-50"><FileIcon name={d.name} size={25} /></div>
+                      <div className="min-w-0 flex-1"><p className="truncate font-medium">{d.name}</p><p className="mt-1 truncate text-xs text-slate-400">{folderName(d.folderId)} · {fmtSize(d.size)}</p></div>
+                      <input type="checkbox" aria-label={`Select ${d.name}`} checked={sel.includes(d.id)} onChange={() => toggle(d.id)} className="mt-1 size-4 accent-brand" />
+                    </div>
+                    <div className="mt-5 flex items-center justify-between gap-2 text-xs text-slate-500"><span className={`rounded-full px-2.5 py-1 font-medium capitalize ${BADGE[d.status]}`}>{d.status}</span><span>{ago(d.modified)}</span></div>
+                    <div className="mt-3 flex gap-2"><button type="button" className={`${ghost} h-9 flex-1`} onClick={() => setPreview(d)}><Eye size={16} />Preview</button><button type="button" className={`${ghost} h-9`} onClick={() => api.documentDetails(d.id).then(setDetails).catch((e: Error) => say(e.message))} aria-label={`Details for ${d.name}`}><FileText size={16} /></button></div>
+                  </article>)}
+                </div>}
+                <div className={fileView === 'grid' ? 'hidden' : ''}>
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-xs text-slate-500">
                     <tr>
@@ -345,6 +368,8 @@ export default function Dashboard() {
                   </tbody>
                 </table>
                 {rows.length > shown && <button className="w-full border-t border-slate-100 py-3 text-sm font-medium text-brand hover:bg-slate-50" onClick={() => setShown((n) => n + 50)}>Show more ({rows.length - shown} left)</button>}
+                </div>
+                {fileView === 'grid' && rows.length > shown && <button className="mt-3 w-full rounded-xl border border-slate-200 py-3 text-sm font-medium text-brand hover:bg-slate-50" onClick={() => setShown((n) => n + 50)}>Show more ({rows.length - shown} left)</button>}
               </div>
             )}
           </section>
@@ -389,8 +414,14 @@ export default function Dashboard() {
       )}
       {folderModal && (
         <Modal title="New folder" onClose={() => { setFolderModal(false); setFolderErr('') }}>
-          <form className="mt-4" onSubmit={(e) => { e.preventDefault(); addFolder(String(new FormData(e.currentTarget).get('name') ?? '')) }}>
+          <form className="mt-4" onSubmit={(e) => { e.preventDefault(); addFolder(String(new FormData(e.currentTarget).get('name') ?? ''), folderVisibility) }}>
             <input name="name" autoFocus placeholder="Folder name" aria-label="Folder name" className={input} />
+            {!personal && <label className="mt-4 block text-sm font-medium">Folder visibility
+              <select value={folderVisibility} onChange={(e) => setFolderVisibility(e.target.value as 'public' | 'private')} className={`${input} mt-1.5`}>
+                <option value="public">Public - everyone can view, upload, and edit</option>
+                <option value="private">Private - selected members only</option>
+              </select>
+            </label>}
             {folderErr && <p role="alert" className="mt-2 text-sm text-red-600">{folderErr}</p>}
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" className={ghost} onClick={() => { setFolderModal(false); setFolderErr('') }}>Cancel</button>
