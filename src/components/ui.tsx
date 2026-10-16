@@ -16,8 +16,8 @@ export function Logo({ size = 28 }: { size?: number }) {
   )
 }
 
-export function Menu({ label, className, panel = 'right-0 mt-2', onOpen, children }: {
-  label: ReactNode; className: string; panel?: string; onOpen?: () => void; children: (close: () => void) => ReactNode
+export function Menu({ label, className, wrapperClassName = '', panel = 'right-0 mt-2', onOpen, children }: {
+  label: ReactNode; className: string; wrapperClassName?: string; panel?: string; onOpen?: () => void; children: (close: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -30,7 +30,7 @@ export function Menu({ label, className, panel = 'right-0 mt-2', onOpen, childre
     return () => { document.removeEventListener('mousedown', click); document.removeEventListener('keydown', key) }
   }, [open])
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={`relative ${wrapperClassName}`}>
       <button type="button" className={className} aria-haspopup="menu" aria-expanded={open} onClick={() => { if (!open) onOpen?.(); setOpen(!open) }}>{label}</button>
       {open && (
         <div role="menu" className={`absolute z-30 min-w-52 rounded-xl border border-slate-200 bg-white p-1 shadow-lg ${panel}`}>
