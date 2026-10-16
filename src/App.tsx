@@ -21,10 +21,15 @@ function Guard({ children, needOrg, allowOrg }: { children: ReactNode; needOrg?:
   return <>{children}</>
 }
 
+function Home() {
+  const { db } = useApp()
+  return db.signedIn ? <Navigate to="/app" replace /> : <Landing />
+}
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<Home />} />
       <Route path="/signin" element={<Auth mode="signin" />} />
       <Route path="/signup" element={<Auth mode="signup" />} />
       <Route path="/forgot" element={<Forgot />} />

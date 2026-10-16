@@ -152,6 +152,10 @@ export const api = {
     await call(`/orgs/${orgId()}/folders`, json('POST', { name }))
     return reload()
   },
+  async deleteFolder(folderId: string) {
+    await call(`/orgs/${orgId()}/folders/${folderId}`, { method: 'DELETE' })
+    return reload()
+  },
   setFolderAccess(folderId: string, access: { userId: string; view: boolean; upload: boolean; edit: boolean; delete: boolean }) {
     return call(`/orgs/${orgId()}/folders/${folderId}/access`, json('PATCH', access))
   },

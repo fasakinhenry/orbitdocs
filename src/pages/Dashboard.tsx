@@ -40,7 +40,8 @@ export default function Dashboard() {
   const { db, setDb, say } = useApp()
   const nav = useNavigate()
   const { view: v } = useParams()
-  const admin = db.org!.role !== 'member'
+  const personal = db.org!.personal === true
+  const admin = !personal && db.org!.role !== 'member'
   const view = (v && v in VIEWS && (!ADMIN_ONLY.includes(v as View) || admin) ? v : 'all') as View
   const bare = view === 'people' || view === 'activity' || view === 'settings'
   const [sp, setSp] = useSearchParams()
@@ -90,6 +91,10 @@ export default function Dashboard() {
     if (!name.trim()) return setFolderErr('Give the folder a name.')
     if (db.folders.some((f) => f.name.toLowerCase() === name.trim().toLowerCase())) return setFolderErr('A folder with this name already exists.')
     try { setDb(await api.createFolder(name.trim())); setFolderModal(false); setFolderErr(''); say('Folder created') } catch (e) { setFolderErr((e as Error).message) }
+  }
+  async function deleteFolder(id: string, name: string) {
+    if (!window.confirm(`Delete the "${name}" folder? It must be empty first.`)) return
+    try { setDb(await api.deleteFolder(id)); setSp({}); say('Folder deleted') } catch (e) { say((e as Error).message) }
   }
   async function setStatus(ids: string[], status: Status, msg: string) {
     try { setDb(await (status === 'pending' ? api.submit(ids) : api.setStatus(ids, status))); setSel([]); say(msg) } catch (e) { say((e as Error).message) }
@@ -183,8 +188,8 @@ export default function Dashboard() {
           <div className={bare ? 'invisible' : ''}>
             <Menu className={primary} label={<><Plus size={16} weight="bold" />New</>}>
               {(close) => <>
-                <MenuItem icon={<UploadSimple size={18} />} onClick={() => { close(); file.current?.click() }}>Upload files</MenuItem>
-                {admin && <MenuItem icon={<FolderPlus size={18} />} onClick={() => { close(); setFolderModal(true) }}>New folder</MenuItem>}
+                <MenuItem icon={<UploadSimple size={18} />} onClick={() => { close(); if (!db.folders.length) return say('Create a folder before uploading files.'); file.current?.click() }}>Upload files</MenuItem>
+                {(admin || personal) && <MenuItem icon={<FolderPlus size={18} />} onClick={() => { close(); setFolderModal(true) }}>New folder</MenuItem>}
               </>}
             </Menu>
           </div>
@@ -204,11 +209,16 @@ export default function Dashboard() {
               <h2 className="mb-3 text-sm font-medium text-slate-500">Folders</h2>
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {db.folders.map((f) => (
-                  <button key={f.id} onClick={() => setSp({ folder: f.id })} className="rounded-2xl bg-slate-50 p-4 text-left transition-colors hover:bg-slate-100">
+                  <div key={f.id} className="group relative rounded-2xl bg-slate-50 p-4 transition-colors hover:bg-slate-100">
+                  <button onClick={() => setSp({ folder: f.id })} className="w-full text-left">
                     <FolderSimple size={30} weight="fill" className="text-brand/60" />
-                    <p className="mt-4 truncate text-sm font-medium">{f.name}</p>
+                    <p className="mt-4 truncate pr-8 text-sm font-medium">{f.name}</p>
                     <p className="mt-0.5 text-xs text-slate-400">{live.filter((d) => d.folderId === f.id).length} files, {ago(f.updated)}</p>
                   </button>
+                  {(admin || personal) && <Menu className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100" label={<DotsThree size={20} />} panel="right-0 mt-1">
+                    {(close) => <MenuItem icon={<Trash size={17} />} danger onClick={() => { close(); void deleteFolder(f.id, f.name) }}>Delete folder</MenuItem>}
+                  </Menu>}
+                  </div>
                 ))}
               </div>
             </section>
@@ -232,12 +242,14 @@ export default function Dashboard() {
             <h2 className="mb-3 text-sm font-medium text-slate-500">{view === 'all' ? 'All files' : `${rows.length} ${rows.length === 1 ? 'file' : 'files'}`}</h2>
             {rows.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
-                <FolderSimple size={36} className="mx-auto text-slate-300" />
-                <p className="mt-4 font-medium">{live.length === 0 && view === 'all' ? 'Your library is empty' : q ? 'No matches' : 'Nothing here yet'}</p>
+                <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-50 text-slate-300"><FolderSimple size={34} /></div>
+                <p className="mt-4 font-medium">{live.length === 0 && view === 'all' ? (db.folders.length ? 'Your library is empty' : 'Start with a folder') : q ? 'No matches' : 'Nothing here yet'}</p>
                 <p className="mx-auto mt-1 max-w-xs text-sm text-slate-500">
-                  {live.length === 0 && view === 'all' ? 'Upload your first document to get started.' : q ? 'Try a different name.' : view === 'trash' ? 'Deleted files show up here.' : view === 'starred' ? 'Star a file to find it fast.' : view === 'approvals' ? 'Files sent for review will show up here.' : 'Upload a file to this view.'}
+                  {live.length === 0 && view === 'all' ? (db.folders.length ? 'Upload your first document to get started.' : 'Create a folder to keep your documents organized.') : q ? 'Try a different name.' : view === 'trash' ? 'Deleted files show up here.' : view === 'starred' ? 'Star a file to find it fast.' : view === 'approvals' ? 'Files sent for review will show up here.' : 'Upload a file to this view.'}
                 </p>
-                {live.length === 0 && view === 'all' && <button className={`${primary} mt-6`} onClick={() => file.current?.click()}><UploadSimple size={16} />Upload files</button>}
+                {live.length === 0 && view === 'all' && (db.folders.length
+                  ? <button className={`${ghost} mt-6`} onClick={() => file.current?.click()}><UploadSimple size={16} />Upload files</button>
+                  : <button className={`${ghost} mt-6`} onClick={() => setFolderModal(true)}><FolderPlus size={16} />Create a folder</button>)}
               </div>
             ) : (
               <div className="overflow-hidden rounded-2xl border border-slate-200">

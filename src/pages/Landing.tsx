@@ -41,9 +41,8 @@ export default function Landing() {
       <header className="flex items-center justify-between py-6">
         <Link to="/" className="flex items-center gap-2.5 font-semibold"><Logo />OrbitDocs</Link>
         <nav className="flex items-center gap-2">
-          <Link to="/signin" className={ghost}>Sign in</Link>
-          <Link to="/organizations" className="hidden text-sm text-slate-500 hover:text-slate-900 sm:inline-flex">Explore organizations</Link>
           <Link to="/signup" className={`${primary} hidden sm:inline-flex`}>Get started</Link>
+          <Link to="/signin" className={ghost}>Sign in</Link>
         </nav>
       </header>
       <main className="flex-1">
@@ -54,7 +53,7 @@ export default function Landing() {
           </p>
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Link to="/signup" className={`${primary} h-12 px-6 text-base`}>Get started</Link>
-            <Link to="/signin" className={`${ghost} h-12 px-6 text-base`}>Sign in</Link>
+            <Link to="/organizations" className={`${ghost} h-12 px-6 text-base`}>Explore organizations</Link>
           </div>
         </section>
         <Preview />
