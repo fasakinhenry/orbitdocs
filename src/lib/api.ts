@@ -8,7 +8,7 @@ export interface Note { id: string; text: string; at: string; read: boolean }
 export interface Folder { id: string; name: string; updated: number }
 export interface Doc {
   id: string; name: string; folderId: string; owner: string; ownerId: string; size: number
-  modified: number; status: Status; starred: boolean; trashed: boolean
+  modified: number; status: Status; starred: boolean; trashed: boolean; mime?: string; deleteRequested?: boolean
 }
 export interface MyInvite { id: string; orgName: string; role: string; expires: string }
 export interface JoinLink { id: string; url: string; expires: string; uses: number; maxUses: number | null }
@@ -164,8 +164,11 @@ export const api = {
     await call(`/orgs/${orgId()}/folders/${folderId}/duplicate`, { method: 'POST' })
     return reload()
   },
-  setFolderAccess(folderId: string, access: { userId: string; view: boolean; upload: boolean; edit: boolean; delete: boolean }) {
+  setFolderAccess(folderId: string, access: { userId: string; view: boolean; upload: boolean; edit: boolean; delete: boolean; manage: boolean }) {
     return call(`/orgs/${orgId()}/folders/${folderId}/access`, json('PATCH', access))
+  },
+  folderAccess(folderId: string) {
+    return call<{ items: { id: string; name: string; username: string; view: boolean; upload: boolean; edit: boolean; delete: boolean; manage: boolean }[] }>(`/orgs/${orgId()}/folders/${folderId}/access`)
   },
   async patchDocs(ids: string[], patch: Partial<Doc>) {
     const b = `/orgs/${orgId()}/documents`
@@ -176,6 +179,25 @@ export const api = {
   async submit(ids: string[]) {
     await call(`/orgs/${orgId()}/documents/submit`, json('POST', { ids }))
     return reload()
+  },
+  async deleteRequest(ids: string[]) {
+    await call(`/orgs/${orgId()}/documents/delete-request`, json('POST', { ids }))
+    return reload()
+  },
+  async deleteDecision(ids: string[], approved: boolean) {
+    await call(`/orgs/${orgId()}/documents/delete-decision`, json('POST', { ids, approved }))
+    return reload()
+  },
+  async copyDocs(ids: string[], folderId: string) {
+    await call(`/orgs/${orgId()}/documents/copy`, json('POST', { ids, folderId }))
+    return reload()
+  },
+  async moveDocs(ids: string[], folderId: string) {
+    await call(`/orgs/${orgId()}/documents/move`, json('POST', { ids, folderId }))
+    return reload()
+  },
+  documentDetails(id: string) {
+    return call<{ id: string; name: string; folderName: string; mime: string | null; size: number; created: string; modified: string; owner: string; status: Status; deleteRequested: boolean }>(`/orgs/${orgId()}/documents/${id}`)
   },
   async setStatus(ids: string[], status: Status) {
     await call(`/orgs/${orgId()}/documents/status`, json('POST', { ids, status }))

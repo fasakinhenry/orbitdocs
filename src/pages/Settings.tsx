@@ -16,9 +16,14 @@ export default function Settings() {
   const [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [folderId, setFolderId] = useState('')
   const [memberId, setMemberId] = useState('')
-  const [permissions, setPermissions] = useState({ view: true, upload: false, edit: false, delete: false })
+  const [permissions, setPermissions] = useState({ view: true, upload: false, edit: false, delete: false, manage: false })
+  const [folderAccess, setFolderAccess] = useState<{ id: string; name: string; username: string; view: boolean; upload: boolean; edit: boolean; delete: boolean; manage: boolean }[]>([])
   useEffect(() => { api.usage().then(setUsage).catch(() => undefined) }, [])
   useEffect(() => { if (org.role !== 'member') api.members().then((x) => setMembers(x.members.map((m) => ({ id: m.id, name: m.name })))).catch(() => undefined) }, [org.role])
+  useEffect(() => {
+    if (!folderId || org.role === 'member') return setFolderAccess([])
+    api.folderAccess(folderId).then((r) => setFolderAccess(r.items)).catch((e: Error) => say(e.message))
+  }, [folderId, org.role, say])
 
   async function save(e: FormEvent) {
     e.preventDefault()
@@ -86,9 +91,13 @@ export default function Settings() {
               {members.filter((m) => m.id !== db.user?.id).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {(['view', 'upload', 'edit', 'delete'] as const).map((key) => <label key={key} className="flex items-center gap-2"><input type="checkbox" checked={permissions[key]} onChange={(e) => setPermissions({ ...permissions, [key]: e.target.checked })} />{key}</label>)}
+              {(['view', 'upload', 'edit', 'delete', 'manage'] as const).map((key) => <label key={key} className="flex items-center gap-2"><input type="checkbox" checked={permissions[key]} onChange={(e) => setPermissions({ ...permissions, [key]: e.target.checked })} />{key === 'manage' ? 'folder admin' : key}</label>)}
             </div>
-            <button type="button" className={primary} disabled={!folderId || !memberId} onClick={() => api.setFolderAccess(folderId, { userId: memberId, ...permissions }).then(() => say('Folder access updated')).catch((e: Error) => say(e.message))}>Save folder access</button>
+            <button type="button" className={primary} disabled={!folderId || !memberId} onClick={() => api.setFolderAccess(folderId, { userId: memberId, ...permissions }).then(() => { say('Folder access updated'); return api.folderAccess(folderId) }).then((r) => setFolderAccess(r.items)).catch((e: Error) => say(e.message))}>Save folder access</button>
+            {folderAccess.length > 0 && <div className="mt-6 rounded-xl border border-slate-200">
+              <p className="border-b border-slate-100 px-3 py-2 text-xs font-medium text-slate-500">People with access to this folder</p>
+              <ul className="divide-y divide-slate-100">{folderAccess.map((m) => <li key={m.id} className="flex items-center gap-3 px-3 py-2.5 text-sm"><span className="min-w-0 flex-1 truncate">{m.name} <span className="text-slate-400">@{m.username}</span></span><span className="text-xs text-slate-400">{[m.view && 'view', m.upload && 'upload', m.edit && 'edit', m.delete && 'delete', m.manage && 'folder admin'].filter(Boolean).join(', ') || 'No access'}</span></li>)}</ul>
+            </div>}
           </div>
         </section>
       )}

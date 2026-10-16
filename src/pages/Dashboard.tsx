@@ -55,6 +55,8 @@ export default function Dashboard() {
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string }>()
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string }>()
   const [preview, setPreview] = useState<Doc | null>(null)
+  const [details, setDetails] = useState<Awaited<ReturnType<typeof api.documentDetails>> | null>(null)
+  const [transfer, setTransfer] = useState<{ ids: string[]; action: 'copy' | 'move' }>()
   const [shown, setShown] = useState(50)
   const file = useRef<HTMLInputElement>(null)
   const org = db.org!
@@ -110,6 +112,13 @@ export default function Dashboard() {
   }
   async function setStatus(ids: string[], status: Status, msg: string) {
     try { setDb(await (status === 'pending' ? api.submit(ids) : api.setStatus(ids, status))); setSel([]); say(msg) } catch (e) { say((e as Error).message) }
+  }
+  async function transferFiles(folderId: string) {
+    if (!transfer) return
+    try {
+      setDb(await (transfer.action === 'copy' ? api.copyDocs(transfer.ids, folderId) : api.moveDocs(transfer.ids, folderId)))
+      setTransfer(undefined); setSel([]); say(transfer.action === 'copy' ? 'Files copied' : 'Files moved')
+    } catch (e) { say((e as Error).message) }
   }
   async function switchOrg(id: string) {
     if (id === org.id) return
@@ -300,7 +309,7 @@ export default function Dashboard() {
                             <FileIcon name={d.name} />
                             <div className="min-w-0">
                               <p className="flex items-center gap-1.5 truncate font-medium">{d.name}{d.starred && <Star size={13} weight="fill" className="shrink-0 text-amber-400" />}</p>
-                              <p className="text-xs text-slate-400 md:hidden">{ago(d.modified)}, {fmtSize(d.size)}</p>
+                              <p className="text-xs text-slate-400 md:hidden">{folderName(d.folderId)} · {ago(d.modified)}, {fmtSize(d.size)}</p>
                             </div>
                           </div>
                         </td>
@@ -316,11 +325,17 @@ export default function Dashboard() {
                               <MenuItem icon={<Trash size={18} />} danger onClick={() => { close(); purge([d.id]) }}>Delete forever</MenuItem>
                             </> : <>
                               <MenuItem icon={<Eye size={18} />} onClick={() => { close(); setPreview(d) }}>Preview</MenuItem>
+                              <MenuItem icon={<FileText size={18} />} onClick={() => { close(); api.documentDetails(d.id).then(setDetails).catch((e: Error) => say(e.message)) }}>File details</MenuItem>
                               <MenuItem icon={<DownloadSimple size={18} />} onClick={() => { close(); api.download(d.id).catch((e: Error) => say(e.message)) }}>Download</MenuItem>
+                              <MenuItem icon={<Copy size={18} />} onClick={() => { close(); setTransfer({ ids: [d.id], action: 'copy' }) }}>Copy to folder</MenuItem>
+                              <MenuItem icon={<FolderSimple size={18} />} onClick={() => { close(); setTransfer({ ids: [d.id], action: 'move' }) }}>Move to folder</MenuItem>
                               <MenuItem icon={<Star size={18} weight={d.starred ? 'fill' : 'regular'} />} onClick={() => { close(); patch([d.id], { starred: !d.starred }, d.starred ? 'Removed star' : 'Starred') }}>{d.starred ? 'Remove star' : 'Star'}</MenuItem>
-                              {d.status === 'draft' && d.ownerId === user.id && <MenuItem icon={<PaperPlaneTilt size={18} />} onClick={() => { close(); setStatus([d.id], 'pending', 'Submitted for approval') }}>Submit for approval</MenuItem>}
+                              {d.ownerId === user.id && d.status === 'draft' && <MenuItem icon={<PaperPlaneTilt size={18} />} onClick={() => { close(); setStatus([d.id], 'pending', 'Submitted for approval') }}>Submit for approval</MenuItem>}
+                              {d.ownerId === user.id && d.status === 'pending' && <MenuItem icon={<ArrowUUpLeft size={18} />} onClick={() => { close(); api.submit([d.id]).then(setDb).then(() => say('Approval submission removed')).catch((e: Error) => say(e.message)) }}>Remove approval submission</MenuItem>}
                               {admin && d.status !== 'approved' && <MenuItem icon={<CheckCircle size={18} />} onClick={() => { close(); setStatus([d.id], 'approved', 'Approved') }}>Approve</MenuItem>}
                               {admin && d.status === 'pending' && <MenuItem icon={<ArrowUUpLeft size={18} />} onClick={() => { close(); setStatus([d.id], 'draft', 'Returned to draft') }}>Return to draft</MenuItem>}
+                              {d.deleteRequested && admin && <><MenuItem icon={<CheckCircle size={18} />} onClick={() => { close(); api.deleteDecision([d.id], true).then(() => api.session()).then(setDb).then(() => say('Deletion approved')).catch((e: Error) => say(e.message)) }}>Approve deletion</MenuItem><MenuItem icon={<ArrowUUpLeft size={18} />} onClick={() => { close(); api.deleteDecision([d.id], false).then(() => api.session()).then(setDb).then(() => say('Deletion declined')).catch((e: Error) => say(e.message)) }}>Decline deletion</MenuItem></>}
+                              {!admin && <MenuItem icon={<Trash size={18} />} danger onClick={() => { close(); api.deleteRequest([d.id]).then(setDb).then(() => say('Deletion request sent for approval')).catch((e: Error) => say(e.message)) }}>Request deletion</MenuItem>}
                               {admin && <MenuItem icon={<Trash size={18} />} danger onClick={() => { close(); patch([d.id], { trashed: true }, 'Moved to trash') }}>Move to trash</MenuItem>}
                             </>}
                           </Menu>
@@ -352,6 +367,26 @@ export default function Dashboard() {
       </main>
 
       {preview && <Preview doc={preview} onClose={() => setPreview(null)} />}
+      {details && (
+        <Modal title="File details" onClose={() => setDetails(null)}>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div><dt className="text-slate-400">Name</dt><dd className="mt-1 break-words font-medium">{details.name}</dd></div>
+            <div><dt className="text-slate-400">Folder</dt><dd className="mt-1 font-medium">{details.folderName}</dd></div>
+            <div><dt className="text-slate-400">Owner</dt><dd className="mt-1">{details.owner}</dd></div>
+            <div><dt className="text-slate-400">Size</dt><dd className="mt-1">{fmtSize(details.size)}</dd></div>
+            <div><dt className="text-slate-400">Status</dt><dd className="mt-1 capitalize">{details.status}</dd></div>
+            <div><dt className="text-slate-400">Created</dt><dd className="mt-1">{new Date(details.created).toLocaleString()}</dd></div>
+          </dl>
+        </Modal>
+      )}
+      {transfer && (
+        <Modal title={`${transfer.action === 'copy' ? 'Copy' : 'Move'} files`} onClose={() => setTransfer(undefined)}>
+          <p className="mt-3 text-sm text-slate-500">Choose the destination folder.</p>
+          <div className="mt-4 space-y-2">
+            {db.folders.filter((f) => f.id !== folderId).map((f) => <button key={f.id} type="button" className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-left text-sm hover:bg-slate-50" onClick={() => void transferFiles(f.id)}><FolderSimple size={18} className="text-brand" />{f.name}</button>)}
+          </div>
+        </Modal>
+      )}
       {folderModal && (
         <Modal title="New folder" onClose={() => { setFolderModal(false); setFolderErr('') }}>
           <form className="mt-4" onSubmit={(e) => { e.preventDefault(); addFolder(String(new FormData(e.currentTarget).get('name') ?? '')) }}>
